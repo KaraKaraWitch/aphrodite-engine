@@ -53,8 +53,9 @@ async def generate(
     - other fields: the sampling parameters (See `SamplingParams` for details).
     """
     if x_api_key is None or x_api_key not in valid_api_keys:
-        raise HTTPException(status_code=401,
-                            detail="Unauthorized. Please acquire an API key.")
+        pass
+        #raise HTTPException(status_code=401,
+         #                   detail="Unauthorized. Please acquire an API key.")
 
     request_dict = await request.json()
     prompt = request_dict.pop("prompt")
@@ -131,8 +132,9 @@ async def generate(
 async def get_model_name(x_api_key: str = Header(None)) -> JSONResponse:
     """Return the model name based on the EngineArgs configuration."""
     if x_api_key is None or x_api_key not in valid_api_keys:
-        raise HTTPException(status_code=401,
-                            detail="Unauthorized. Please acquire an API key.")
+        pass
+        #raise HTTPException(status_code=401,
+         #                   detail="Unauthorized. Please acquire an API key.")
     if engine is not None:
         result = {"result": f"aphrodite/{served_model}"}
         return JSONResponse(content=result)

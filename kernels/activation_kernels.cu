@@ -24,6 +24,20 @@ __global__ void silu_and_mul_kernel(
   }
 }
 
+__global__ void dequant_silu_and_mul_quant_kernel(
+    int8_t *__restrict__ out,          // [num_tokens, d]
+    const int32_t *__restrict__ input, // [num_tokens, 2, d]
+    const int d, const float scale_gate, const float scale_up,
+    const float scale_out) {
+  const int token_idx = blockIdx.x;
+  for (int idx = threadIdx.x; idx < d; idx += blockDim.x) {
+    const float x = (float)__ldg(&input[token_idx * 2 * d + idx]) * scale_gate;
+    const float y =
+        (float)__ldg(&input[token_idx * 2 * d + d + idx]) * scale_up;
+    out[token_idx * d + idx] = float_to_int8_rn(silu(x) * y / scale_out);
+  }
+}
+
 } // namespace aphrodite
 
 void silu_and_mul(
@@ -36,15 +50,26 @@ void silu_and_mul(
   dim3 grid(num_tokens);
   dim3 block(std::min(d, 1024));
   const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
-  APHRODITE_DISPATCH_FLOATING_TYPES(
-    input.scalar_type(),
-    "silu_and_mul_kernel",
-    [&] {
-      aphrodite::silu_and_mul_kernel<scalar_t><<<grid, block, 0, stream>>>(
-        out.data_ptr<scalar_t>(),
-        input.data_ptr<scalar_t>(),
-        d);
-    });
+  APHRODITE_DISPATCH_FLOATING_TYPES(input.scalar_type(), "silu_and_mul_kernel", [&] {
+    aphrodite::silu_and_mul_kernel<scalar_t><<<grid, block, 0, stream>>>(
+      out.data_ptr<scalar_t>(), input.data_ptr<scalar_t>(), d);
+  });
+}
+
+void invoke_dequant_silu_and_mul_quant(
+  torch::Tensor &out,
+  torch::Tensor &input,
+  const float scale_gate,
+  const float scale_up,
+  const float scale_out) {
+    int num_tokens = input.size(0);
+    int d = input.size(1) / 2;
+    dim3 grid(num_tokens);
+    dim3 block(std::min(d, 1024));
+    const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
+    aphrodite::dequant_silu_and_mul_quant_kernel<<<grid, block, 0, stream>>>(
+      out.data_ptr<int8_t>(), input.data_ptr<int32_t>(), d, scale_gate,
+      scale_up, scale_out);
 }
 
 namespace aphrodite {

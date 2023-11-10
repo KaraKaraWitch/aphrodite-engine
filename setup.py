@@ -141,6 +141,22 @@ if nvcc_cuda_version >= Version("11.2"):
 
 ext_modules = []
 
+# int8 gemm operations
+i8cugemm_extension = CUDAExtension(
+    name="aphrodite.i8cugemm",
+    sources=[
+        "kernels/int8gemm/cublas/bindings.cpp",
+        "kernels/int8gemm/cublas/cublasAlgoMap.cc",
+        "kernels/int8gemm/cublas/cublasINT8MMWrapper.cc",
+        "kernels/int8gemm/cublas/cuda_utils.cc"
+    ],
+    extra_compile_args={
+        "cxx": CXX_FLAGS,
+        "nvcc": NVCC_FLAGS,
+    },
+)
+ext_modules.append(i8cugemm_extension)
+
 # Cache operations.
 cache_extension = CUDAExtension(
     name="aphrodite.cache_ops",
@@ -151,6 +167,17 @@ cache_extension = CUDAExtension(
     },
 )
 ext_modules.append(cache_extension)
+
+# fused kernels
+fused_extension = CUDAExtension(
+    name="aphrodite.fused_kernels",
+    sources=["kernels/fused.cpp", "kernels/fused_kernels.cu"],
+    extra_compile_args={
+        "cxx": CXX_FLAGS,
+        "nvcc": NVCC_FLAGS,
+    },
+)
+ext_modules.append(fused_extension)
 
 # Attention kernels.
 attention_extension = CUDAExtension(

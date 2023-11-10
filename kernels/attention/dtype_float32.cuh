@@ -1,6 +1,7 @@
 /*
  * Adapted from https://github.com/NVIDIA/FasterTransformer/blob/release/v5.3_tag/src/fastertransformer/kernels/decoder_masked_multihead_attention/decoder_masked_multihead_attention_template.hpp
  * and https://github.com/NVIDIA/FasterTransformer/blob/release/v5.3_tag/src/fastertransformer/kernels/decoder_masked_multihead_attention_utils.h
+ * Copyright (c) 2023, The PygmalionAI team.
  * Copyright (c) 2023, The vLLM team.
  * Copyright (c) 2020-2023, NVIDIA CORPORATION.  All rights reserved.
  *
@@ -83,6 +84,14 @@ inline __device__ float4 add(float4 a, float4 b) {
   c.y = add(a.y, b.y);
   c.z = add(a.z, b.z);
   c.w = add(a.w, b.w);
+  return c;
+}
+
+// for compiling, the above function seems to be useless
+inline __device__ Float4_ add(Float4_ a, Float4_ b) {
+  Float4_ c;
+  c.x = add(a.x, b.x);
+  c.y = add(a.y, b.y);
   return c;
 }
 
