@@ -2,6 +2,8 @@
 import enum
 from typing import Dict, List, Optional, Set, Tuple
 
+from tqdm import tqdm
+
 from aphrodite.common.block import PhysicalTokenBlock
 from aphrodite.common.sequence import Sequence, SequenceGroup, SequenceStatus
 from aphrodite.common.utils import Device
@@ -39,8 +41,17 @@ class BlockAllocator:
     def allocate(self) -> PhysicalTokenBlock:
         if not self.free_blocks:
             raise ValueError("Out of memory! No free blocks are available.")
+
+        pbar = tqdm(total=self.num_blocks, desc="Allocating blocks", ncols=80)
+
         block = self.free_blocks.pop()
         block.ref_count = 1
+
+        pbar.update(self.num_blocks - len(self.free_blocks))
+
+        if len(self.free_blocks) == 0:
+            pbar.close()
+
         return block
 
     def free(self, block: PhysicalTokenBlock) -> None:
